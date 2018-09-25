@@ -1,0 +1,66 @@
+a. Create classification model using different decision trees.
+Ans:  library("rpart")
+library("rpart.plot")
+data("iris")
+str(iris)
+indexes = sample(150, 110)
+iris_train = iris[indexes,]
+iris_test = iris[-indexes,]
+target = Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width
+target = Sepal.Length ~ ., iris
+tree = rpart(target, data = iris_train, method = "class")
+rpart.plot(tree)
+
+b. Verify model goodness of fit.
+Ans: num_of_samples = 1000
+x <- rgamma(num_of_samples, shape = 10, scale = 3)
+x <- x + rnorm(length(x), mean=0, sd = .1)
+p1 <- hist(x,breaks=50, include.lowest=FALSE, right=FALSE)
+
+c. Apply all the model validation techniques.
+Ans: seed <- 1809
+set.seed(seed)
+ 
+gen_data <- function(n, beta, sigma_eps) {
+    eps <- rnorm(n, 0, sigma_eps)
+    x <- sort(runif(n, 0, 100))
+    X <- cbind(1, poly(x, degree = (length(beta) - 1), raw = TRUE))
+    y <- as.numeric(X %*% beta + eps)
+    
+    return(data.frame(x = x, y = y))
+}
+n_rep <- 100
+n_df <- 30
+df <- 1:n_df
+beta <- c(5, -0.1, 0.004, -3e-05)
+n_train <- 50
+n_test <- 10000
+sigma_eps <- 0.5
+ 
+xy <- res <- list()
+xy_test <- gen_data(n_test, beta, sigma_eps)
+for (i in 1:n_rep) {
+    xy[[i]] <- gen_data(n_train, beta, sigma_eps)
+    x <- xy[[i]][, "x"]
+    y <- xy[[i]][, "y"]
+    res[[i]] <- apply(t(df), 2, function(degf) lm(y ~ ns(x, df = degf)))
+}
+x <- xy[[1]]$x
+X <- cbind(1, poly(x, degree = (length(beta) - 1), raw = TRUE))
+y <- xy[[1]]$y
+plot(y ~ x, col = "gray", lwd = 2)
+lines(x, X %*% beta, lwd = 3, col = "black")
+lines(x, fitted(res[[1]][[1]]), lwd = 3, col = "palegreen3")
+lines(x, fitted(res[[1]][[4]]), lwd = 3, col = "darkorange")
+lines(x, fitted(res[[1]][[25]]), lwd = 3, col = "steelblue")
+legend(x = "topleft", legend = c("True function", "Linear fit (df = 1)", "Best model (df = 4)",
+    "Overfitted model (df = 25)"), lwd = rep(3, 4), col = c("black", "palegreen3", 
+    "darkorange", "steelblue"), text.width = 32, cex = 0.85)
+
+d. Make conclusions
+Ans:  A variety of reasons exist which make the correspondence between goodness of fit and model usefulness less than perfect. This does not mean that goodness of fit measures are of little value in evaluating or developing a model. It does mean, however, that care is required in using goodness of fit measures for model evaluation. This suggests:
+1. Be more explicit about exactly what the model is. This would include reporting post-hoe models as such.
+2. Consider exactly how high a goodness of fit measure is reasonable given random behavior and measurement error. This means being suspicious of tautologies when R2's get above .6 in cross-sectional regressions of survey data.
+3. Attempt whenever possible to utilize predictive testing to examine model validity.
+4. Consider using special goodness of fit measures such as pR2 for examining the usefulness of stochastic models.
+In summary, goodness of fit measures are useful tools in the hands of sophisticated researchers. A high goodness of fit, however, is neither a sufficient nor even a necessary condition for model usefulness.
